@@ -611,8 +611,15 @@ public class CollectorsTest {
 
     @Test
     public void summingIntCollector() {
+        final Integer allVariantsCount = productList.stream()
+                .collect(summingInt(product -> product.getAllVariants().size()));
+        assertThat(allVariantsCount).isEqualTo(275);
 
-
+        //also possible
+        final int sum = productList.stream()
+                .mapToInt(product -> product.getAllVariants().size())//IntStream
+                .sum();
+        assertThat(allVariantsCount).isEqualTo(sum);
     }
 
     @Test
