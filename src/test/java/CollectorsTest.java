@@ -1,17 +1,16 @@
 import io.sphere.sdk.json.SphereJsonUtils;
 import io.sphere.sdk.models.Reference;
 import io.sphere.sdk.products.ProductProjection;
+import io.sphere.sdk.products.ProductVariantAvailability;
 import io.sphere.sdk.products.queries.ProductProjectionQuery;
 import io.sphere.sdk.taxcategories.TaxCategory;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Locale.ENGLISH;
 import static java.util.stream.Collectors.toList;
@@ -492,5 +491,56 @@ public class CollectorsTest {
 //                "--------------------------------------------\n" +
 //                "Zanellato – Bag “Chianti”\n" +
 //                "--------------------------------------------\n");
+    }
+
+    @Test
+    public void partitioningByCollector() {
+        //in Scala there is a partition method on List which returns a tuple" (List[ProductProjection], List[ProductProjection])
+        final Map<Boolean, List<ProductProjection>> availabilityMap = productList.stream()
+                .collect(Collectors.partitioningBy(product -> {
+                    final ProductVariantAvailability availability = product.getMasterVariant().getAvailability();
+                    return availability == null ? false : availability.isOnStock();
+                }));
+        final List<ProductProjection> availableProducts = availabilityMap.getOrDefault(true, emptyList());
+        final List<ProductProjection> notAvailableProducts = availabilityMap.getOrDefault(false, emptyList());
+        assertThat(availableProducts).hasSize(60);
+        assertThat(notAvailableProducts).hasSize(40);
+    }
+
+    @Test
+    public void partitioningByCollectorWithDownStream() {
+
+    }
+
+    @Test
+    public void groupingByCollector() {
+
+
+    }
+
+    @Test
+    public void reducingCollector() {
+
+
+    }
+
+
+
+    @Test
+    public void collectingAndThenCollector() {
+
+
+    }
+
+    @Test
+    public void summingIntCollector() {
+
+
+    }
+
+    @Test
+    public void listBulkCollector() {
+
+
     }
 }
