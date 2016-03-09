@@ -1,12 +1,16 @@
+import io.sphere.sdk.categories.Category;
 import io.sphere.sdk.json.SphereJsonUtils;
 import io.sphere.sdk.models.Reference;
+import io.sphere.sdk.models.ResourceView;
 import io.sphere.sdk.products.ProductProjection;
 import io.sphere.sdk.products.ProductVariantAvailability;
 import io.sphere.sdk.products.queries.ProductProjectionQuery;
 import io.sphere.sdk.taxcategories.TaxCategory;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -15,8 +19,7 @@ import java.util.stream.Stream;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Locale.ENGLISH;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CollectorsTest {
@@ -518,7 +521,7 @@ public class CollectorsTest {
 
         final Map<Boolean, List<String>> availabilityProductIdListMap = productList.stream()
                 .collect(Collectors.partitioningBy(partitionPredicate,
-                        Collectors.mapping(product -> product.getId(), toList())));
+                        mapping(product -> product.getId(), toList())));
 
         final List<String> availableProducts = availabilityProductIdListMap.getOrDefault(true, emptyList());
         final List<String> notAvailableProducts = availabilityProductIdListMap.getOrDefault(false, emptyList());
@@ -530,8 +533,41 @@ public class CollectorsTest {
 
     @Test
     public void groupingByCollector() {
+        final Function<ProductProjection, String> productToCategory = product -> {
+            //categories is a set, so we pick the one with the
+            //lowest ID for a product
+            return new ArrayList<>(product.getCategories())
+                    .stream()
+                    .map(cat -> cat.getId())
+                    .sorted()
+                    .findFirst()
+                    .orElse(null);
+        };
+        final Map<String, List<ProductProjection>> categoryIdToProductListMap = productList.stream()
+                .collect(groupingBy(productToCategory));
 
+        final List<ProductProjection> productsOfCategory =
+                categoryIdToProductListMap.get("dbe882ad-c026-4658-9b55-d14f593de200");
+        assertThat(productsOfCategory).hasSize(2);
+    }
 
+    @Test
+    public void groupingByCollectorWithDownstream() {
+        final Function<ProductProjection, String> productToCategory = product -> {
+            //categories is a set, so we pick the one with the
+            //lowest ID for a product
+            return new ArrayList<>(product.getCategories())
+                    .stream()
+                    .map(cat -> cat.getId())
+                    .sorted()
+                    .findFirst()
+                    .orElse(null);
+        };
+        final Map<String, List<String>> categoryIdToProductIdListMap = productList.stream()
+                .collect(groupingBy(productToCategory, mapping(ResourceView::getId, toList())));
+        final List<String> productIdsOfCategory =
+                categoryIdToProductIdListMap.get("dbe882ad-c026-4658-9b55-d14f593de200");
+        assertThat(productIdsOfCategory).hasSize(2);
     }
 
     @Test
