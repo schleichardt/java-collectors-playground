@@ -1,4 +1,5 @@
 import io.sphere.sdk.categories.Category;
+import io.sphere.sdk.client.SphereClientUtils;
 import io.sphere.sdk.json.SphereJsonUtils;
 import io.sphere.sdk.models.Reference;
 import io.sphere.sdk.models.ResourceView;
@@ -9,11 +10,15 @@ import io.sphere.sdk.taxcategories.TaxCategory;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
@@ -620,6 +625,20 @@ public class CollectorsTest {
                 .mapToInt(product -> product.getAllVariants().size())//IntStream
                 .sum();
         assertThat(allVariantsCount).isEqualTo(sum);
+    }
+
+    @Test
+    public void asyncCollectionCollector() {
+        final List<CompletionStage<String>> futureList = getStageList();
+        final List<String> list = futureList.stream()
+                //should only be used for CompletionStages created for the SphereClient
+                .collect(SphereClientUtils.blockingWaitForEachCollector(Duration.ofSeconds(2)));
+    }
+
+    private List<CompletionStage<String>> getStageList() {
+        return IntStream.range(0, 100)
+                .mapToObj(i -> CompletableFuture.supplyAsync(() -> "" + i))
+                .collect(toList());
     }
 
     @Test
