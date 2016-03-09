@@ -1,4 +1,3 @@
-import io.sphere.sdk.categories.Category;
 import io.sphere.sdk.client.SphereClientUtils;
 import io.sphere.sdk.json.SphereJsonUtils;
 import io.sphere.sdk.models.Reference;
@@ -9,18 +8,17 @@ import io.sphere.sdk.products.queries.ProductProjectionQuery;
 import io.sphere.sdk.taxcategories.TaxCategory;
 import org.junit.Test;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Locale.ENGLISH;
@@ -643,7 +641,34 @@ public class CollectorsTest {
 
     @Test
     public void listBulkCollector() {
+        final List<List<String>> bulkedIdList = productList.stream()
+                .map(ResourceView::getId)
+                .collect(toBulkedList(10));
+        assertThat(bulkedIdList).hasSize(productList.size() / 10);
+        assertThat(bulkedIdList).extracting(elementList -> elementList.size())
+                .isEqualTo(asList(10, 10, 10, 10, 10, 10, 10, 10, 10, 10));
+        final List<String> actualIds = bulkedIdList.stream().flatMap(elementList -> elementList.stream()).collect(Collectors.toList());
+        final List<String> expectedIds = productList.stream()
+                .map(ResourceView::getId)
+                .collect(toList());
+        assertThat(actualIds).isEqualTo(expectedIds);
+    }
 
-
+    public static <T> Collector<T, ?, List<List<T>>> toBulkedList(final int bulkSize) {
+        return Collectors.collectingAndThen(toList(), list -> {
+            final List<List<T>> result = new LinkedList<>();
+            List<T> accu = null;
+            for (final T element : list) {
+                if (accu == null) {
+                    accu = new LinkedList<T>();
+                    result.add(accu);
+                } else if (accu.size() >= bulkSize) {
+                    accu = new LinkedList<T>();
+                    result.add(accu);
+                }
+                accu.add(element);
+            }
+            return result;
+        });
     }
 }
