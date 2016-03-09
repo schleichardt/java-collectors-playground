@@ -596,8 +596,17 @@ public class CollectorsTest {
 
     @Test
     public void collectingAndThenCollector() {
+        //https://docs.oracle.com/javase/8/docs/api/java/util/stream/Collectors.html#collectingAndThen-java.util.stream.Collector-java.util.function.Function-
+        final List<String> ids = productList.stream()
+                .map(ResourceView::getId)
+                //maybe useful if you want an immutable list
+                .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
+        //should be the same as
 
+        final List<String> ids2 = Collections.unmodifiableList(productList.stream()
+                .map(ResourceView::getId)
+                .collect(toList()));
     }
 
     @Test
