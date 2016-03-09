@@ -572,11 +572,27 @@ public class CollectorsTest {
 
     @Test
     public void reducingCollector() {
-
-
+        //see https://docs.oracle.com/javase/8/docs/api/java/util/stream/Collectors.html#reducing-java.util.function.BinaryOperator-
     }
 
+    @Test
+    public void toMapCollector() {
+        //groupingByCollector gives you a Map<K,List<T>>
+        //mapping is a collector which applies a function to every stream element and has a downstream collector
+        //toMap gives you a Map<K, U>
+        final Map<String, Long> productIdToVersionMap = productList.stream()
+                .collect(toMap(ResourceView::getId, ResourceView::getVersion));
+        final Long version = productIdToVersionMap.get("f1103a6e-b12c-4876-8593-a58f872c5bec");
+        assertThat(version).isEqualTo(15);
 
+        //in a loop it would be
+        final Map<String, Long> map = new HashMap<>();
+        for (final ProductProjection product : productList) {
+            map.put(product.getId(), product.getVersion());
+        }//4 lines vs. 2 lines
+
+        assertThat(map).isEqualTo(productIdToVersionMap);
+    }
 
     @Test
     public void collectingAndThenCollector() {
