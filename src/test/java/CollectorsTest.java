@@ -7,6 +7,8 @@ import io.sphere.sdk.taxcategories.TaxCategory;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -509,7 +511,21 @@ public class CollectorsTest {
 
     @Test
     public void partitioningByCollectorWithDownStream() {
+        final Predicate<ProductProjection> partitionPredicate = product -> {
+            final ProductVariantAvailability availability = product.getMasterVariant().getAvailability();
+            return availability == null ? false : availability.isOnStock();
+        };
 
+        final Map<Boolean, List<String>> availabilityProductIdListMap = productList.stream()
+                .collect(Collectors.partitioningBy(partitionPredicate,
+                        Collectors.mapping(product -> product.getId(), toList())));
+
+        final List<String> availableProducts = availabilityProductIdListMap.getOrDefault(true, emptyList());
+        final List<String> notAvailableProducts = availabilityProductIdListMap.getOrDefault(false, emptyList());
+        assertThat(availableProducts).hasSize(60).startsWith("9d6e8891-301d-42e0-81b5-308e79bd748c",
+                "7ef45f58-38e8-4227-9c89-281e8876d523",
+                "ff7b1ee0-d164-4758-8044-979c0f8bcd51");
+        assertThat(notAvailableProducts).hasSize(40);
     }
 
     @Test
